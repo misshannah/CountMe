@@ -198,7 +198,7 @@ public class CaptureActivity extends AppCompatActivity {
 
             mImageView.setImageBitmap(bitmap);
             mImageView.setImageBitmap(bmp);
-            List<Classifier.Recognition> results = analyse(bitmap);
+            List<Classifier.Recognition> results = analyse(bmp);
             classifiedText.setText(results.get(0).toString());
 
         }
@@ -239,7 +239,7 @@ public class CaptureActivity extends AppCompatActivity {
     private File createImageFile() throws IOException {
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
+        String imageFileName = "VialData_" + timeStamp + "_";
         File storageDir = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES);
 
