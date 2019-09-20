@@ -3,7 +3,6 @@ package com.example.countme;
 
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -19,7 +18,6 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -55,6 +53,7 @@ public class CaptureActivity extends AppCompatActivity {
     public static final String INPUT_NAME = "input";
     public static final String OUTPUT_NAME = "final_result";
     public static final String MODEL_FILE = "file:///android_asset/rounded_graph.pb";
+
     public static final String LABEL_FILE = "file:///android_asset/retrained_labels.txt";
 
 
@@ -67,9 +66,9 @@ public class CaptureActivity extends AppCompatActivity {
         //Embed the tensor flow activity to count objects in an image
         initTensorFlowAndLoadModel();
 
-        buttonChoose = (Button) findViewById(R.id.buttonChooseImage);
-        mImageView = (ImageView) findViewById(R.id.imageView);
-        classifiedText = (TextView) findViewById(R.id.classifiedText);
+        buttonChoose = findViewById(R.id.buttonChooseImage);
+        mImageView = findViewById(R.id.imageView);
+        classifiedText = findViewById(R.id.classifiedText);
 
         buttonChoose.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -79,9 +78,6 @@ public class CaptureActivity extends AppCompatActivity {
         });
 
 
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
-                == PackageManager.PERMISSION_DENIED);
-
     }
 
 
@@ -90,6 +86,7 @@ public class CaptureActivity extends AppCompatActivity {
             @Override
             public void run() {
                 try {
+
                     classifier = TensorFlowImageClassifier.create(
                             getAssets(),
                             MODEL_FILE,
@@ -142,6 +139,7 @@ public class CaptureActivity extends AppCompatActivity {
         Intent captureIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
         try {
             photoFile = createImageFile();
+
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -200,7 +198,8 @@ public class CaptureActivity extends AppCompatActivity {
 
             mImageView.setImageBitmap(bitmap);
             mImageView.setImageBitmap(bmp);
-
+            List<Classifier.Recognition> results = analyse(bitmap);
+            classifiedText.setText(results.get(0).toString());
 
         }
 
