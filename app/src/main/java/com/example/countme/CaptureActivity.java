@@ -8,8 +8,8 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.StrictMode;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -37,10 +37,12 @@ public class CaptureActivity extends AppCompatActivity {
     ImageView mImageView;
     TextView classifiedText;
     private int PICK_IMAGE_REQUEST = 99;
+    private int CAPTURE_IMAGE_REQUEST = 100;
     Bitmap bitmap;
     File image;
     Uri imageUri;
     String mCurrentPhotoPath;
+    boolean result = true;
 
     public Classifier classifier;
     public Executor executor = Executors.newSingleThreadExecutor();
@@ -76,7 +78,8 @@ public class CaptureActivity extends AppCompatActivity {
                 selectImage();
             }
         });
-
+        StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+        StrictMode.setVmPolicy(builder.build());
 
     }
 
@@ -115,11 +118,11 @@ public class CaptureActivity extends AppCompatActivity {
         final CharSequence[] items = {"Take Photo", "Choose from Gallery",
                 "Cancel"};
         AlertDialog.Builder builder = new AlertDialog.Builder(CaptureActivity.this);
-        builder.setTitle("Add Photo!");
+        builder.setTitle("Count Photo!");
         AlertDialog.Builder cancel = builder.setItems(items, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int item) {
-                boolean result = Utility.checkPermission(CaptureActivity.this);
+               // boolean result = Utility.checkPermission(CaptureActivity.this);
                 if (items[item].equals("Take Photo")) {
                     if (result)
                         captureImage();
@@ -137,13 +140,21 @@ public class CaptureActivity extends AppCompatActivity {
     private void captureImage() {
 
         Intent captureIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-        try {
-            photoFile = createImageFile();
+        if(captureIntent.resolveActivity(getApplicationContext().getPackageManager()) != null) {
+            photoFile = null;
+            try {
+                photoFile = createImageFile();
 
-        } catch (IOException ex) {
-            ex.printStackTrace();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+            imageUri = null;
+            if (photoFile != null) {
+                imageUri = Uri.fromFile(photoFile);
+                captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+                startActivityForResult(captureIntent, CAPTURE_IMAGE_REQUEST);
+            }
         }
-        startActivityForResult(captureIntent, 100);
     }
 
 
@@ -164,12 +175,15 @@ public class CaptureActivity extends AppCompatActivity {
                 Toast.makeText(this, "Missing Image", Toast.LENGTH_SHORT).show();
             } else {
                 try {
-                    Bitmap bitmaps = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
+                   Bitmap bitmaps = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
+
+
                     final ByteArrayOutputStream stream = new ByteArrayOutputStream();
                     bitmaps.compress(Bitmap.CompressFormat.JPEG, 100, stream);
 
-                    mImageView.setImageBitmap(bitmaps);
 
+
+                   mImageView.setImageBitmap(bitmaps);
                     final Uri imageUri = data.getData();
                     final InputStream imageStream = getContentResolver().openInputStream(imageUri);
                     final Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
@@ -184,7 +198,7 @@ public class CaptureActivity extends AppCompatActivity {
         }
         if (resultCode == RESULT_OK && requestCode == 100) {
 
-
+/*
             // Get Extra from the intent
             Bundle extras = data.getExtras();
             // Get the returned image from extra
@@ -196,9 +210,13 @@ public class CaptureActivity extends AppCompatActivity {
             bmp.getScaledHeight(targetH);
             bmp.getScaledWidth(targetW);
 
-            mImageView.setImageBitmap(bitmap);
-            mImageView.setImageBitmap(bmp);
-            List<Classifier.Recognition> results = analyse(bmp);
+*/
+            Bitmap bMap = BitmapFactory.decodeFile(mCurrentPhotoPath);
+
+
+            mImageView.setImageURI(imageUri);
+            //mImageView.setImageBitmap(bMap);
+            List<Classifier.Recognition> results = analyse(bMap);
             classifiedText.setText(results.get(0).toString());
 
         }
@@ -211,47 +229,21 @@ public class CaptureActivity extends AppCompatActivity {
         super.onPause();
     }
 
-    private void setPic() {
-        // Get the dimensions of the View
-        int targetW = mImageView.getWidth();
-        int targetH = mImageView.getHeight();
-
-        // Get the dimensions of the bitmap
-        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-        bmOptions.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
-        int photoW = bmOptions.outWidth;
-        int photoH = bmOptions.outHeight;
-
-        // Determine how much to scale down the image
-        int scaleFactor = Math.min(photoW / targetW, photoH / targetH);
-
-        // Decode the image file into a Bitmap sized to fill the View
-        bmOptions.inJustDecodeBounds = false;
-        bmOptions.inSampleSize = scaleFactor;
-        bmOptions.inPurgeable = true;
-
-        Bitmap bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
-        mImageView.setImageBitmap(bitmap);
-
-    }
-
     private File createImageFile() throws IOException {
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "VialData_" + timeStamp + "_";
-        File storageDir = Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES);
+        //File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        File storageDir = getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
 
         image = File.createTempFile(
                 imageFileName,  /* prefix */
-                ".png",         /* suffix */
+                ".jpg",         /* suffix */
                 storageDir      /* directory */
         );
 
-        // Save a file: path for use with ACTION_VIEW intents
         mCurrentPhotoPath = image.getAbsolutePath();
-        Log.e("Getpath", "Cool" + mCurrentPhotoPath);
+        //Log.e("Getpath", "Path result" + mCurrentPhotoPath);
 
         return image;
     }
